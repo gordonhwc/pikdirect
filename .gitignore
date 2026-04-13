@@ -1,3 +1,11 @@
+# Editor
 /.idea/
+
+# Python packaging / build artifacts
+/*.egg-info/
+
+# Local tool files
 /uv.lock
+
+# Local auth/session files
 /.pikdirect-auth.json
