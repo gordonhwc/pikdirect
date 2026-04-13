@@ -1,4 +1,4 @@
-"""Command-line entrypoint for the PikPak share URL resolver."""
+"""Command-line entrypoint for the pikdirect CLI."""
 
 import argparse
 import getpass
@@ -13,7 +13,7 @@ from workflow import run_workflow
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser."""
     parser = argparse.ArgumentParser(
-        prog="pikpak-share",
+        prog="pikdirect",
         description="Resolve direct URLs from a PikPak shared file or folder.",
     )
     parser.add_argument("share_url", help="PikPak share URL")

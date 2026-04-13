@@ -31,7 +31,7 @@ def test_main_uses_default_auth_file_in_current_directory(
     main.main(["https://mypikpak.com/s/share-id", "--username", "alice@example.com"])
     captured = capsys.readouterr()
 
-    assert recorded["auth_file"] == (tmp_path / ".pikpak-auth.json").resolve()
+    assert recorded["auth_file"] == (tmp_path / ".pikdirect-auth.json").resolve()
     assert recorded["username"] == "alice@example.com"
     assert recorded["password"] == "secret"
     assert recorded["delete"] is True

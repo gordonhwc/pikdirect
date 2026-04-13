@@ -1,9 +1,9 @@
-"""Project-wide constants for the PikPak share URL resolver."""
+"""Project-wide constants for the pikdirect CLI."""
 
 API_BASE_URL = "https://api-drive.mypikpak.net"
 USER_BASE_URL = "https://user.mypikpak.net"
 
-DEFAULT_AUTH_FILE_NAME = ".pikpak-auth.json"
+DEFAULT_AUTH_FILE_NAME = ".pikdirect-auth.json"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 DEFAULT_PARENT_ID = "root"
 
