@@ -1,0 +1,43 @@
+# Build backend
+[build-system]
+requires = [
+    "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+# Package metadata and runtime dependencies
+[project]
+name = "pikdirect"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "httpx",
+]
+
+# CLI entry point
+[project.scripts]
+pikdirect = "main:main"
+
+# Development-only dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+# Flat module layout for setuptools
+[tool.setuptools]
+py-modules = [
+    "auth",
+    "client",
+    "config",
+    "main",
+    "models",
+    "share",
+    "workflow",
+]
+
+# Test discovery
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
