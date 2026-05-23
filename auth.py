@@ -52,7 +52,11 @@ def load_auth_session(auth_file: Path, username: str, password: str) -> AuthSess
         raise AuthError("auth file must contain a string 'username'")
 
     if username_value.strip() != normalized_username:
-        raise AuthError("auth file username does not match '--username'")
+        return AuthSession(
+            username=normalized_username,
+            auth_file=auth_path.resolve(),
+            device_id=derive_device_id(normalized_username, password),
+        )
 
     device_id_value = payload.get("device_id")
     if isinstance(device_id_value, str) and device_id_value.strip():

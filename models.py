@@ -1,7 +1,10 @@
 """Shared data models and domain-specific exception types."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+
+CaptchaChallengeHandler = Callable[[str], str]
 
 
 class PikPakError(Exception):
@@ -95,6 +98,7 @@ class WorkflowOptions:
     password: str
     auth_file: Path
     delete: bool = True
+    captcha_handler: CaptchaChallengeHandler | None = None
 
 
 @dataclass(slots=True)

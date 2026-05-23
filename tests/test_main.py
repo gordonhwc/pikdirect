@@ -4,8 +4,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 import main
-from models import ResolvedUrl, WorkflowResult
+from models import AuthError, ResolvedUrl, WorkflowResult
 
 
 def test_main_uses_default_auth_file_in_current_directory(
@@ -68,6 +70,50 @@ def test_main_uses_password_flag_without_prompt(monkeypatch, tmp_path, capsys) -
 
     assert recorded["password"] == "secret"
     assert captured.out.strip() == "https://download.example/file.bin"
+
+
+def test_extract_captcha_token_from_callback_url() -> None:
+    assert (
+        main.extract_captcha_token(
+            "xlaccsdk01://xbase.cloud/callback?state=harbor&captcha_token=verified-token"
+        )
+        == "verified-token"
+    )
+
+
+def test_extract_captcha_token_rejects_challenge_url() -> None:
+    assert (
+        main.extract_captcha_token(
+            "https://user.mypikpak.net/captcha/v2/txCaptcha.html?captcha_token=initial-token"
+        )
+        is None
+    )
+
+
+def test_prompt_for_captcha_challenge_prints_url_and_reads_token(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        main.builtins,
+        "input",
+        lambda _prompt: "xlaccsdk01://xbase.cloud/callback?captcha_token=verified-token",
+    )
+
+    token = main.prompt_for_captcha_challenge("https://captcha.example/challenge")
+    captured = capsys.readouterr()
+
+    assert token == "verified-token"
+    assert "https://captcha.example/challenge" in captured.err
+    assert "filter for xlaccsdk01://" in captured.err
+
+
+def test_prompt_for_captcha_challenge_requires_verified_token(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.builtins,
+        "input",
+        lambda _prompt: "",
+    )
+
+    with pytest.raises(AuthError, match="verified captcha_token"):
+        main.prompt_for_captcha_challenge("https://captcha.example/challenge")
 
 
 def test_main_prints_multiple_resolved_urls(monkeypatch, tmp_path, capsys) -> None:

@@ -9,6 +9,7 @@ import workflow
 from models import (
     AuthError,
     AuthSession,
+    CaptchaChallengeHandler,
     CleanupError,
     DriveNode,
     ResolveError,
@@ -41,9 +42,16 @@ class FakeClient:
     direct_url_error: Exception | None = None
     delete_error: Exception | None = None
 
-    def __init__(self, session: AuthSession, *, password: str) -> None:
+    def __init__(
+        self,
+        session: AuthSession,
+        *,
+        password: str,
+        captcha_handler: CaptchaChallengeHandler | None = None,
+    ) -> None:
         self.session = session
         self.password = password
+        self.captcha_handler = captcha_handler
         self.deleted_ids: list[str] = []
         self.saved_calls: list[tuple[str, str, list[str]]] = []
         self.direct_url_calls: list[str] = []
@@ -205,6 +213,19 @@ def test_run_workflow_resolves_urls_from_restored_folder(monkeypatch, tmp_path) 
     assert len(saved_sessions) == 1
     assert saved_sessions[0].access_token == "fresh-access-token"
     assert saved_sessions[0].refresh_token == "fresh-refresh-token"
+
+
+def test_run_workflow_passes_captcha_handler_to_client(monkeypatch, tmp_path) -> None:
+    setup_fake_workflow(monkeypatch, tmp_path)
+
+    def captcha_handler(_url: str) -> str:
+        return "verified-captcha-token"
+
+    options = make_options(tmp_path, captcha_handler=captcha_handler)
+
+    workflow.run_workflow(options)
+
+    assert FakeClient.instances[0].captcha_handler is captcha_handler
 
 
 def test_run_workflow_keeps_restored_node_when_delete_is_disabled(monkeypatch, tmp_path) -> None:

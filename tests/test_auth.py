@@ -1,13 +1,11 @@
 import json
 
-import pytest
-
 from auth import (
     derive_device_id,
     load_auth_session,
     save_auth_session,
 )
-from models import AuthError, AuthSession
+from models import AuthSession
 
 
 def test_load_auth_session_creates_new_session_when_file_is_missing(tmp_path):
@@ -45,15 +43,27 @@ def test_load_auth_session_accepts_refreshable_session(tmp_path):
     assert session.auth_file == auth_file.resolve()
 
 
-def test_load_auth_session_rejects_mismatched_username(tmp_path):
+def test_load_auth_session_starts_fresh_when_username_changes(tmp_path):
     auth_file = tmp_path / "auth.json"
     auth_file.write_text(
-        json.dumps({"username": "bob@example.com", "device_id": "device-id"}),
+        json.dumps(
+            {
+                "username": "bob@example.com",
+                "access_token": "old-access-token",
+                "refresh_token": "old-refresh-token",
+                "device_id": "old-device-id",
+            }
+        ),
         encoding="utf-8",
     )
 
-    with pytest.raises(AuthError, match="does not match"):
-        load_auth_session(auth_file, "alice@example.com", "secret")
+    session = load_auth_session(auth_file, "alice@example.com", "secret")
+
+    assert session.username == "alice@example.com"
+    assert session.auth_file == auth_file.resolve()
+    assert session.device_id == derive_device_id("alice@example.com", "secret")
+    assert session.access_token == ""
+    assert session.refresh_token == ""
 
 
 def test_save_auth_session_round_trips(tmp_path):

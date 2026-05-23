@@ -1,9 +1,11 @@
 """Command-line entrypoint for the pikdirect CLI."""
 
 import argparse
+import builtins
 import getpass
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from config import DEFAULT_AUTH_FILE_NAME
 from models import AuthError, ResolvedUrl, WorkflowOptions
@@ -52,6 +54,46 @@ def resolve_password(args: argparse.Namespace) -> str:
         raise AuthError("password was not provided and interactive prompt failed") from exc
 
 
+def extract_captcha_token(value: str) -> str | None:
+    """Extract a captcha token from a pasted callback URL."""
+    cleaned_value = value.strip()
+    if not cleaned_value:
+        return None
+
+    parsed_url = urlparse(cleaned_value)
+    if parsed_url.scheme in {"http", "https"} and parsed_url.netloc:
+        return None
+
+    query_values = parse_qs(parsed_url.query)
+    token_values = query_values.get("captcha_token")
+    if not token_values or not token_values[0].strip():
+        return None
+
+    return token_values[0].strip()
+
+
+def prompt_for_captcha_challenge(verification_url: str) -> str:
+    """Prompt the user to complete a PikPak captcha challenge."""
+    print("Captcha verification required.", file=sys.stderr)
+    print(f"Open this URL in a browser:\n{verification_url}", file=sys.stderr)
+    print(
+        "Before completing verification, open DevTools Network. "
+        "After verification, filter for xlaccsdk01://, copy that request URL, "
+        "and paste it here.",
+        file=sys.stderr,
+    )
+
+    try:
+        captcha_token = extract_captcha_token(builtins.input("Captcha callback URL: "))
+    except EOFError as exc:
+        raise AuthError(f"captcha verification required: {verification_url}") from exc
+
+    if captcha_token is None:
+        raise AuthError("captcha verification requires a verified captcha_token")
+
+    return captcha_token
+
+
 def build_workflow_options(args: argparse.Namespace) -> WorkflowOptions:
     """Convert parsed arguments into workflow options."""
     return WorkflowOptions(
@@ -60,6 +102,7 @@ def build_workflow_options(args: argparse.Namespace) -> WorkflowOptions:
         password=resolve_password(args),
         auth_file=args.auth_file.expanduser().resolve(),
         delete=args.delete,
+        captcha_handler=prompt_for_captcha_challenge,
     )
 
 

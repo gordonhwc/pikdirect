@@ -41,6 +41,9 @@ uv run pikdirect \
 
 If you omit `--password`, `pikdirect` will prompt for it securely.
 
+If PikPak requires captcha verification, `pikdirect` prints a challenge URL and waits for the callback URL from the
+browser verification flow.
+
 ## 🧭 Usage
 
 ```bash
@@ -71,6 +74,17 @@ uv run pikdirect \
 - shared folder: prints one line per file as `relative_path<TAB>direct_url`
 
 When `--delete` is enabled, the resolved URLs may stop working after the temporary saved copy is removed.
+
+## 🔐 Captcha Verification
+
+When the CLI prints a PikPak captcha challenge URL:
+
+1. Open the challenge URL in a browser.
+2. Open DevTools and switch to the Network tab before completing verification.
+3. Complete the verification in the browser.
+4. In Network, filter for `xlaccsdk01://`.
+5. Select the callback request, usually the only result, then right-click it and select `Copy` > `Copy URL`.
+6. Paste that callback URL back into the `pikdirect` prompt.
 
 ## 🔐 Auth Session
 

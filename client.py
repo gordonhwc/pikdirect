@@ -31,6 +31,7 @@ from config import (
 from models import (
     AuthError,
     AuthSession,
+    CaptchaChallengeHandler,
     CleanupError,
     DriveNode,
     ResolveError,
@@ -136,11 +137,13 @@ class PikPakClient:
         session: AuthSession,
         *,
         password: str,
+        captcha_handler: CaptchaChallengeHandler | None = None,
         http_client: httpx.Client | None = None,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ) -> None:
         self.session = session
         self.password = password
+        self._captcha_handler = captcha_handler
         self._owns_http_client = http_client is None
         self._http_client = http_client or httpx.Client(
             timeout=timeout,
@@ -492,10 +495,10 @@ class PikPakClient:
         payload = {
             "client_id": DEFAULT_CLIENT_ID,
             "action": action,
-            "captcha_token": self._captcha_token,
             "device_id": self.session.device_id,
             "meta": meta,
             "redirect_uri": CAPTCHA_REDIRECT_URI,
+            "captcha_token": self._captcha_token,
         }
 
         try:
@@ -512,13 +515,23 @@ class PikPakClient:
 
         verification_url = _coerce_nonempty_string(response.get("url"))
         if verification_url is not None:
-            raise AuthError(f"captcha verification required: {verification_url}")
+            if self._captcha_handler is None:
+                raise AuthError(f"captcha verification required: {verification_url}")
 
-        captcha_token = response.get("captcha_token")
-        if not isinstance(captcha_token, str) or not captcha_token.strip():
+            verified_token = _coerce_nonempty_string(
+                self._captcha_handler(verification_url)
+            )
+            if verified_token is None:
+                raise AuthError("captcha verification did not provide a captcha_token")
+
+            self._captcha_token = verified_token
+            return
+
+        captcha_token = _coerce_nonempty_string(response.get("captcha_token"))
+        if captcha_token is None:
             raise AuthError("captcha init did not return captcha_token")
 
-        self._captcha_token = captcha_token.strip()
+        self._captcha_token = captcha_token
 
     def _update_session_tokens(
         self,

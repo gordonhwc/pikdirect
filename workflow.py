@@ -33,7 +33,11 @@ def run_workflow(options: WorkflowOptions) -> WorkflowResult:
     target = parse_share_url(options.share_url)
     warnings = _build_warnings(delete=options.delete)
 
-    with PikPakClient(session, password=options.password) as client:
+    with PikPakClient(
+        session,
+        password=options.password,
+        captcha_handler=options.captcha_handler,
+    ) as client:
         restored_root_id: str | None = None
         entries: list[ResolvedUrl] = []
         primary_error: Exception | None = None
